@@ -3,22 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Node.js WebプロキシUI (全画面)</title>
+    <title>yuzupp | Webプロキシ</title>
     <style>
         :root {
-            --primary-color: #4f46e5;
-            --primary-hover-color: #4338ca;
+            /* グレースケール（灰色）を基調としたデザイン */
+            --primary-color: #374151; /* 濃い灰色（メインボタンカラー） */
+            --primary-hover-color: #1f2937; /* さらに濃い灰色 */
             --text-color: #1f2937;
-            --bg-color: #f9fafb;
-            --border-color: #d1d5db;
-            --info-bg: #eff6ff;
-            --info-border: #bfdbfe;
-            --info-text: #1e40af;
+            --bg-color: #f3f4f6; /* 薄い灰色（背景） */
+            --header-bg: #4b5563; /* ヘッダー背景 */
+            --border-color: #9ca3af;
+            --input-focus-color: #374151;
             --header-height: 60px;
         }
 
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
             background-color: var(--bg-color);
@@ -30,24 +30,48 @@
 
         .header {
             height: var(--header-height);
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            background-color: var(--header-bg);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
             display: flex;
             align-items: center;
             padding: 0 20px;
+            z-index: 20;
+            flex-shrink: 0;
+            gap: 15px; /* 要素間の隙間を調整 */
+        }
+
+        /* 戻るボタンのスタイル */
+        #back-button {
+            /* 目立たない灰色 */
+            background-color: #6b7280; 
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            line-height: 1;
+            display: none; /* 初期は非表示 */
+        }
+        #back-button:hover {
+            background-color: #4b5563;
         }
 
         h1 {
             font-size: 1.25rem;
-            font-weight: 700;
-            color: var(--text-color);
+            font-weight: 800;
+            color: white;
             margin-right: 20px;
+            letter-spacing: 1px;
+            white-space: nowrap;
         }
 
         .form-group {
             display: flex;
             gap: 10px;
             flex-grow: 1;
+            align-items: center;
         }
 
         #url-input {
@@ -57,7 +81,12 @@
             border-radius: 6px;
             font-size: 14px;
             outline: none;
-            min-width: 200px;
+            min-width: 150px;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        #url-input:focus {
+            border-color: var(--input-focus-color);
+            box-shadow: 0 0 0 3px rgba(55, 65, 81, 0.2);
         }
 
         #load-button {
@@ -68,10 +97,14 @@
             border: none;
             border-radius: 6px;
             cursor: pointer;
-            transition: background-color 0.15s;
+            transition: background-color 0.2s, transform 0.1s;
+            white-space: nowrap;
         }
         #load-button:hover {
             background-color: var(--primary-hover-color);
+        }
+        #load-button:active {
+            transform: translateY(1px);
         }
 
         .content-container {
@@ -85,6 +118,7 @@
             height: 100%;
             border: none;
             display: none;
+            background-color: white;
         }
 
         .message-overlay {
@@ -93,13 +127,14 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(255, 255, 255, 0.9);
+            background-color: rgba(255, 255, 255, 0.95);
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            font-size: 1.2rem;
-            color: #6b7280;
+            font-size: 1.1rem;
+            color: #4b5563;
             z-index: 10;
         }
 
@@ -108,11 +143,12 @@
             font-weight: 600; 
             display: flex; 
             align-items: center; 
-            gap: 8px; 
+            gap: 10px; 
+            font-size: 1rem;
         }
 
         .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
+            border: 4px solid rgba(55, 65, 81, 0.2);
             border-top: 4px solid var(--primary-color);
             border-radius: 50%;
             width: 20px;
@@ -126,16 +162,46 @@
         }
 
         .hidden { display: none !important; }
+
+        /* レスポンシブ対応: 狭い画面ではレイアウトを変更 */
+        @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+                height: auto;
+                padding: 10px 15px;
+                gap: 5px;
+            }
+            #back-button {
+                /* モバイルでは少し目立つようにする */
+                padding: 8px 10px;
+            }
+            h1 {
+                margin: 0;
+                width: 100%;
+                text-align: center;
+            }
+            .title-group {
+                display: flex;
+                width: 100%;
+                justify-content: space-between;
+                align-items: center;
+            }
+            .form-group {
+                width: 100%;
+                gap: 8px;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>Webプロキシ</h1>
+        <button id="back-button" title="前のページに戻る">← 戻る</button>
+        <h1>yuzupp</h1>
         <div class="form-group">
             <input type="url" id="url-input" 
                    placeholder="表示したい外部URLを入力 (例: https://example.com)" 
-                   value="https://www.example.com">
+                   value="">
             <button id="load-button">
                 読み込む
             </button>
@@ -144,28 +210,31 @@
 
     <div id="content-container" class="content-container">
         <div id="initial-message" class="message-overlay">
-            URLを入力して「読み込む」ボタンを押してください。<br>
-            リンクがプロキシ経由で開くか確認できます。
+            表示したいウェブサイトのURLを入力し、「読み込む」ボタンまたは **Enter** を押してください。<br>
+            このプロキシを経由してコンテンツが表示されます。
         </div>
         
         <iframe id="proxy-iframe" sandbox="allow-same-origin allow-scripts" title="Proxied Content"></iframe>
     </div>
 
     <script>
-        document.getElementById('load-button').addEventListener('click', async () => {
+        const backButton = document.getElementById('back-button');
+
+        const loadProxiedUrl = async () => {
             const targetUrl = document.getElementById('url-input').value.trim();
             const contentContainer = document.getElementById('content-container');
             const initialMessage = document.getElementById('initial-message');
-            const iframe = document.getElementById('proxy-iframe');
 
             if (!targetUrl || !targetUrl.startsWith('http')) {
                 alert('有効なURL（httpまたはhttpsで始まる）を入力してください。');
                 return;
             }
 
-            initialMessage.classList.add('hidden');
-            iframe.style.display = 'none';
-
+            if (initialMessage) {
+                initialMessage.classList.add('hidden');
+            }
+            
+            // ローディングメッセージを表示
             contentContainer.innerHTML = `
                 <div class="message-overlay">
                     <p class="loading-message">
@@ -173,6 +242,9 @@
                     </p>
                 </div>
             `;
+            
+            // 戻るボタンを一旦非表示 (読み込み中は操作させない)
+            backButton.style.display = 'none'; 
 
             const proxyEndpoint = `/proxy?url=${encodeURIComponent(targetUrl)}`; 
 
@@ -180,12 +252,20 @@
                 const response = await fetch(proxyEndpoint);
                 
                 if (!response.ok) {
-                    const errorJson = await response.json();
-                    throw new Error(`プロキシ通信失敗 (${response.status}): ${errorJson.error || '不明なエラー'}`);
+                    let errorDetails = '不明なエラー';
+                    try {
+                        const errorJson = await response.json();
+                        errorDetails = errorJson.error || errorDetails;
+                    } catch (e) {
+                        errorDetails = await response.text();
+                        if (errorDetails.length > 200) errorDetails = errorDetails.substring(0, 200) + '...';
+                    }
+                    throw new Error(`プロキシ通信失敗 (${response.status}): ${errorDetails}`);
                 }
 
                 const htmlContent = await response.text();
                 
+                // 新しいiframeを作成して表示
                 contentContainer.innerHTML = `
                     <iframe id="proxy-iframe" sandbox="allow-same-origin allow-scripts" title="Proxied Content"></iframe>
                 `;
@@ -197,18 +277,41 @@
                 doc.open();
                 doc.write(htmlContent);
                 doc.close();
+                
+                // 成功時、戻るボタンを表示
+                backButton.style.display = 'inline-block';
 
             } catch (error) {
                 console.error('Fetch error:', error);
+                // エラーメッセージを表示
                 contentContainer.innerHTML = `
-                    <div class="message-overlay" style="background-color: #ffe5e5; color: #dc2626;">
-                        <p style="font-weight: 600;">
-                            🛑 エラーが発生しました。<br>
-                            詳細: ${error.message}
+                    <div class="message-overlay" style="background-color: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; padding: 20px; border-radius: 8px;">
+                        <p style="font-weight: 700; font-size: 1.3rem;">
+                            🛑 プロキシエラー
                         </p>
+                        <p>詳細: ${error.message}</p>
                     </div>
                 `;
+                // エラー時は戻るボタンを非表示
+                backButton.style.display = 'none';
             }
+        };
+        
+        // 1. ボタンクリックで実行
+        document.getElementById('load-button').addEventListener('click', loadProxiedUrl);
+        
+        // 2. Enterキーで実行
+        document.getElementById('url-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                loadProxiedUrl();
+            }
+        });
+        
+        // 3. 戻るボタンの機能
+        backButton.addEventListener('click', () => {
+            // ブラウザの履歴を1つ戻る
+            history.back(); 
         });
     </script>
 </body>
